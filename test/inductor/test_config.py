@@ -28,8 +28,6 @@ class TestInductorConfig(TestCase):
         config.max_fusion_size = 13337
         self.assertEqual(config.max_fusion_size, 13337)
         self.assertEqual(config.to_dict()["max_fusion_size"], 13337)
-        config.to_dict()["max_fusion_size"] = 32
-        self.assertEqual(config.max_fusion_size, 32)
 
         # a nested config
         prior = config.triton.cudagraphs
