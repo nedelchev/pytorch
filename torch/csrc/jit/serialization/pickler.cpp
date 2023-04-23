@@ -801,4 +801,87 @@ bool checkHasValidSetGetState(const std::shared_ptr<c10::ClassType>& cls) {
   return true;
 }
 
+// Declare BackendMeta serialization and deserialization function pointer types.
+using BackendMetaPtr =
+    void (*)(const at::Tensor&, std::unordered_map<std::string, int>&);
+
+// map to save function pointer for BackendMeta serialization.
+// key is the DeviceType, value is std::pair obj. 
+// value.first represent get function and value.seconde represent set function
+static std::unordered_map<int, std::pair<void*, void*>> serialization_map;
+
+// Register function pointer of Tensor BackendMetadata for serialization.
+void TensorBackendMetaRegistry(c10::DeviceType t, void* get_fptr, void* set_fptr) {
+    TORCH_CHECK(
+        fptr_map.find(static_cast<int>(t)) == fptr_map.end(),
+        "The tensor BackendMeta serialization function pointer for ",
+        t, "has been registered.");
+    serialization_map[static_cast<int>(t)] = std::make_pair(get_fptr, set_fptr);
+  }
+}
+
+// Return a map of Tensor Metadata which including BackendMetaData for
+// serialization. For now, it only takes care of `conj` and `neg` bit.
+std::unordered_map<std::string, int> getTensorMetadata(const at::Tensor& t) {
+  // We don't support serializing `ZeroTensor` as it is not public
+  // facing yet.
+  TORCH_CHECK(
+      !t._is_zerotensor(),
+      "ZeroTensor is not serializable,",
+      " please file an issue if required.");
+  std::unordered_map<std::string, int> metadata{};
+
+  // Only add meta-data if the value is not default.
+  if (t.is_conj()) {
+    metadata["conj"] = 1;
+  }
+  if (t.is_neg()) {
+    metadata["neg"] = 1;
+  }
+  // Only add BackendMetaData for custom backend if the function pointer is
+  // registered.
+  int device_type = static_cast<int>(t.device().type());
+  if (serialization_map.find(device_type) != serialization_map.end()) {
+    // Pass the tensor and metadata map references as parameters to the custom
+    // serialization function.
+    ((BackendMetaPtr)serialization_map[device_type].first)(t, metadata);
+  }
+  return metadata;
+}
+
+void setTensorMetadata(
+    const at::Tensor& t,
+    std::unordered_map<std::string, int> metadata) {
+  auto iter_end = metadata.end();
+  auto iter_temp = metadata.find("conj");
+  if (iter_temp != iter_end) {
+    t._set_conj(true);
+    metadata.erase(iter_temp);
+  }
+  iter_temp = metadata.find("neg");
+  if (iter_temp != iter_end) {
+    t._set_neg(true);
+    metadata.erase(iter_temp);
+  }
+  // Only set BackendMetaData for custom backend if the function pointer is
+  // registered.
+  int device_type = static_cast<int>(t.device().type());
+  if (serialization_map.find(device_type) != serialization_map.end()) {
+    // Pass the tensor and metadata map references as parameters to the custom
+    // deserialization function.
+    ((BackendMetaPtr)serialization_map[device_type].second)(t, metadata);
+  }
+}
+
+void setTensorMetadata(
+    const at::Tensor& t,
+    c10::Dict<c10::IValue, c10::IValue> metadata_idict) {
+  std::unordered_map<std::string, int> metadata;
+  for (auto& pair : metadata_idict) {
+    auto key = *pair.key().toString();
+    metadata[key] = pair.value().toInt();
+  }
+  setTensorMetadata(t, std::move(metadata));
+}
+
 } // namespace torch::jit
