@@ -196,8 +196,16 @@ def stacksize_analysis(instructions):
 
     worklist = deque()
     worklist.append(0)
+    i = 0
 
     while len(worklist) != 0:
+        i += 1
+        if i > 1000:
+            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+            import traceback
+            traceback.print_stack()
+            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+        
         index = worklist.popleft()
         inst = instructions[index]
         stack_size = stack_sizes[inst]
