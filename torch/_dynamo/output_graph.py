@@ -768,8 +768,9 @@ class OutputGraph(fx.Tracer, Checkpointable[OutputGraphState]):
         gm.compile_subgraph_reason = self.compile_subgraph_reason
         name = unique_id("__compiled_fn")
 
-        import pdb; pdb.set_trace()
-        # assert_no_fake_params_or_buffers(gm)
+        # import pdb; pdb.set_trace()
+        # assert_no_fake_params_or_buffers(gm)  # thiagocrepaldi: Allow FakeTensor?
+        print(gm.graph.print_tabular())
         compiled_fn = self.call_user_compiler(gm)
         compiled_fn = disable(compiled_fn)
 

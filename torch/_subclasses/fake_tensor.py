@@ -11,7 +11,7 @@ from weakref import ReferenceType
 
 import torch
 import torch._custom_op
-from torch._guards import Source
+from torch._guards import Source, detect_fake_mode
 from torch._ops import OpOverload
 from torch._prims_common import (
     elementwise_dtypes,
@@ -776,6 +776,8 @@ def make_fast_binary_impl(slow_ref):
         if is_contiguous:
             # do contiguous
             count_label("fast is_contiguous")
+            # import pdb; pdb.set_trace()
+            fake_mode = torch._guards.detect_fake_mode(operands)
             return FakeTensor(
                 mode,
                 torch.empty(
@@ -808,6 +810,7 @@ def make_fast_binary_impl(slow_ref):
 @functools.lru_cache(None)
 def get_fast_op_impls():
     import torch._refs
+    # import pdb; pdb.set_trace()
 
     register_fast_op_impl(torch.ops.aten.add.Tensor)(
         make_fast_binary_impl(torch._refs.add)
@@ -827,7 +830,7 @@ def in_kernel_invocation_manager(fake_mode):
     # See: note [Fake Tensor Dispatch Keys]
     prev_in_kernel = fake_mode.in_kernel_invocation
     meta_in_tls = torch._C._meta_in_tls_dispatch_include()
-    # assert meta_in_tls == prev_in_kernel, f"{meta_in_tls}, {prev_in_kernel}"
+    # assert meta_in_tls == prev_in_kernel, f"meta_in_tls={meta_in_tls}, prev_in_kernel={prev_in_kernel}"  # thiagocrepaldi: Am I setting `in_kernel_invocation` correctly?
 
     guard = torch._C._DisableTorchDispatch()  # type: ignore[attr-defined]
     fake_mode.in_kernel_invocation = True
@@ -905,6 +908,7 @@ class FakeTensor(torch.Tensor):
 
     @staticmethod
     def __new__(cls, fake_mode, elem, device, constant=None):
+        # import pdb; pdb.set_trace()
         self = torch.Tensor._make_subclass(
             cls,
             elem,
@@ -1106,6 +1110,7 @@ class FakeTensorMode(TorchDispatchMode):
     @count
     def __torch_dispatch__(self, func, types, args=(), kwargs=None):
         try:
+            fake_mode = detect_fake_mode([*args, *kwargs.values()])
             return self.dispatch(func, types, args, kwargs)
         except TypeError:
             log.exception("fake tensor raised TypeError")
@@ -1253,10 +1258,12 @@ class FakeTensorMode(TorchDispatchMode):
             if fast_impl is not None:
                 return fast_impl(self, *args, **kwargs)
 
+        print("c3p0 1")
         # If there's a Python meta, prefer that over the decomposition
         from torch._decomp import meta_table as meta_table
 
         if func not in meta_table and not self.cpp_meta_supports_symint(func):
+            print("c3p0 2")
             from torch._decomp import decomposition_table
 
             # Prefer Python decompositions over C++ ones
@@ -1270,12 +1277,15 @@ class FakeTensorMode(TorchDispatchMode):
                 )
             ):
                 with self:
+                    print("c3p0 3")
                     return decomposition_table[func](*args, **kwargs)
 
             with self:
+                print("c3p0 4")
                 # Decomposes CompositeImplicitAutograd ops
                 r = func.decompose(*args, **kwargs)
                 if r is not NotImplemented:
+                    print("c3p0 5", r)
                     return r
 
         # prims already wrap FakeTensor inputs to FakeTensor outputs
@@ -1284,12 +1294,14 @@ class FakeTensorMode(TorchDispatchMode):
         # Fake Tensor Dispatch Keys
         # TODO - we should be use the prim aten impl
         # TODO - fix prims complex ops
+        print("c3p0 6")
         if (
             "prims::" in func._schema.name
             and hasattr(func, "prim_meta_impl")
             and not unsupported_complex_op(func)
         ):
             with self:
+                print("c3p0 7")
                 return func.prim_meta_impl(*args, **kwargs)
 
         # Users can register FakeTensor rules for custom operators
@@ -1306,22 +1318,30 @@ class FakeTensorMode(TorchDispatchMode):
         # e.g., manipulating args on constructor calls to construct meta tensors
         # and then afterwards wrapping them to a FakeTensor
         for run_impl_check, op_impl in op_implementations:
+            print("c3p0 8")
             if run_impl_check(func):
+                print("c3p0 9")
                 op_impl_out = op_impl(self, func, *args, **kwargs)
                 if op_impl_out != NotImplemented:
+                    print("c3p0 10")
                     return op_impl_out
 
         # run kernel registered to meta for func, which include
         # python meta registrations, prims, decomps, and c++ meta fns (structured kernels)
         try:
+            print("c3p0 11")
             with in_kernel_invocation_manager(self):
                 r = func(*args, **kwargs)
         except NotImplementedError as not_implemented_error:
+            print("c3p0 12")
             # no meta kernel registered, fallback to kernel for the device
             if has_symbolic_sizes or not self.allow_fallback_kernels:
+                print("c3p0 13")
                 raise UnsupportedOperatorException(func)
+            print("c3p0 14")
             return run_fallback_kernel(self, func, args, kwargs, not_implemented_error)
 
+        print("c3p0 15")
         return self.wrap_meta_outputs_with_default_device_logic(r, func, args, kwargs)
 
     # [subclass inputs]
@@ -1367,7 +1387,7 @@ class FakeTensorMode(TorchDispatchMode):
                     )
 
                 x = converter(self, x)
-            # else:
+            # else:  # thiagocrepaldi: Allow FakeTensor
             #     assert x.fake_mode is self, "Mixing fake modes NYI"
 
             flat_arg_fake_tensors.append(x)
