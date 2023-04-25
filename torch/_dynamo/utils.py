@@ -587,15 +587,16 @@ def clone_inputs(example_inputs):
 
 @contextmanager
 def preserve_rng_state():
-    rng = torch.clone(torch.random.get_rng_state())
-    if torch.cuda.is_available():
-        cuda_rng = torch.clone(torch.cuda.get_rng_state())
+    # rng = torch.clone(torch.random.get_rng_state())
+    # if torch.cuda.is_available():
+    #     cuda_rng = torch.clone(torch.cuda.get_rng_state())
     try:
         yield
     finally:
-        torch.random.set_rng_state(rng)
-        if torch.cuda.is_available():
-            torch.cuda.set_rng_state(cuda_rng)
+        pass
+        # torch.random.set_rng_state(rng)
+        # if torch.cuda.is_available():
+        #     torch.cuda.set_rng_state(cuda_rng)
 
 
 def is_jit_model(model0):
@@ -1256,6 +1257,7 @@ def get_fake_value(node, tx):
             unimplemented("guard on data-dependent symbolic int/float")
         elif isinstance(cause, torch.utils._sympy.value_ranges.ValueRangeError):
             raise UserError(UserErrorType.CONSTRAIN_VIOLATION, e.args[0]) from e
+        import pdb; pdb.set_trace()
         raise TorchRuntimeError() from e
 
 

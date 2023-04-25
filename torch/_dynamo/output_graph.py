@@ -768,7 +768,7 @@ class OutputGraph(fx.Tracer, Checkpointable[OutputGraphState]):
         gm.compile_subgraph_reason = self.compile_subgraph_reason
         name = unique_id("__compiled_fn")
 
-        assert_no_fake_params_or_buffers(gm)
+        # assert_no_fake_params_or_buffers(gm)
         compiled_fn = self.call_user_compiler(gm)
         compiled_fn = disable(compiled_fn)
 

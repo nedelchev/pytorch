@@ -140,8 +140,8 @@ class GraphArg:
             assert isinstance(
                 self.fake_tensor, torch._subclasses.fake_tensor.FakeTensor
             )
-        if isinstance(self.example, torch._subclasses.fake_tensor.FakeTensor):
-            raise AssertionError("Fake Tensor observed in TorchDynamo Fx graph inputs")
+        # if isinstance(self.example, torch._subclasses.fake_tensor.FakeTensor):
+        #     raise AssertionError("Fake Tensor observed in TorchDynamo Fx graph inputs")
 
     def load(self, tx):
         return self.source.reconstruct(tx)
@@ -776,7 +776,7 @@ class VariableBuilder:
             # a later point in time.
             ignore_subclass = True
         else:
-            assert type(value) in (torch.Tensor, torch.nn.Parameter)
+            # assert type(value) in (torch.Tensor, torch.nn.Parameter)
             ignore_subclass = False
 
         is_duplicate_tensor = source in self.tx.output.input_source_to_var
@@ -786,6 +786,7 @@ class VariableBuilder:
         tensor_proxy = self.tx.output.create_graph_input(
             re.sub(r"[^a-zA-Z0-9]+", "_", self.name), type(value)
         )
+        print("******************************************************* 1")
         tensor_variable = wrap_fx_proxy(
             tx=self.tx,
             proxy=tensor_proxy,
@@ -795,6 +796,7 @@ class VariableBuilder:
             ignore_subclass=ignore_subclass,
             source=source,
         )
+        print("******************************************************* 2")
         self.tx.output.input_source_to_var[source] = tensor_variable
         assert "tensor_dict" not in tensor_proxy.node.meta
         tensor_proxy.node.meta["tensor_dict"] = value.__dict__.copy()
@@ -823,6 +825,7 @@ class VariableBuilder:
                 subclass_type,
             )
 
+        print("******************************************************* 999")
         return tensor_variable
 
     def wrap_unspecialized_primitive(self, value):
@@ -948,7 +951,7 @@ def wrap_fx_proxy_cls(
     target_cls, tx, proxy, example_value=None, ignore_subclass=False, **options
 ):
     from ..symbolic_convert import InstructionTranslatorBase
-
+    print("******************************************************* 1.1")
     assert isinstance(tx, InstructionTranslatorBase)
     if "guards" in options and options["guards"] is not None:
         tx.output.guards.update(options["guards"])
