@@ -22,7 +22,7 @@ dce = False
 static_weight_shapes = True
 
 # put correctness assertions in generated code
-size_asserts = True
+size_asserts = os.environ.get("TORCHINDUCTOR_SIZE_ASSERTS", "1") == "1"
 
 # enable loop reordering based on input orders
 pick_loop_orders = True
@@ -63,10 +63,13 @@ search_autotune_cache = os.environ.get("TORCHINDUCTOR_SEARCH_AUTOTUNE_CACHE") ==
 # We will disable creating subprocess for autotuning if this is False
 autotune_in_subproc = os.environ.get("TORCHINDUCTOR_AUTOTUNE_IN_SUBPROC") == "1"
 
-
 coordinate_descent_tuning = (
     os.environ.get("TORCHINDUCTOR_COORDINATE_DESCENT_TUNING") == "1"
 )
+
+layout_opt = os.environ.get("TORCHINDUCTOR_LAYOUT_OPT", "1") == "1"
+force_contiguous_inputs = os.environ.get("TORCHINDUCTOR_FORCE_CONTIGUOUS_INPUTS", "0") == "1"
+fallback_batchnorm = os.environ.get("TORCHINDUCTOR_FALLBACK_BATCH_NROM", "1") == "1"
 
 # control store vs recompute heuristic
 # For fanouts, rematerialization can lead to exponential blowup. So, have

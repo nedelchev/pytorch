@@ -1071,3 +1071,27 @@ def triton_config_to_hashable(cfg):
     items.append(("num_warps", cfg.num_warps))
     items.append(("num_stages", cfg.num_stages))
     return tuple(items)
+
+def to_contiguous(t):
+    """
+    A contigous tensor with size
+        torch.Size([128, 64, 1, 1])
+    stride
+        (64, 1, 64, 64)
+
+    will be confused by aten.convolution_backward as a channels last tensor.
+    And the output of the op will also be channels last rather than contiguous.
+    Normalize the stride to (64, 1, 1, 1) in this case.
+    """
+    t = t.contiguous()
+    strides = list(t.stride())
+    sizes = list(t.size())
+    nchange = 0
+    for i in range(len(strides)):
+        if sizes[i] == 1 and strides[i] != 1:
+            strides[i] = 1
+            nchange += 1
+    if nchange > 0:
+        t = t.as_strided(sizes, strides)
+
+    return t

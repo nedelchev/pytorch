@@ -2738,9 +2738,17 @@ def aot_dispatch_autograd(flat_fn, flat_args: List[Any], aot_config: AOTConfig, 
                 if CompiledFunction.compiled_bw is None:
                     assert all(a is not None for a in all_args)
                     context = disable_autocast_manager if disable_amp else nullcontext
-                    with tracing(saved_context), context(), track_graph_compiling(aot_config, "backward"):
+                    # XXX: Temporaries revert this change from https://github.com/pytorch/pytorch/pull/99619
+                    # since it cause channels last activation output from fwd graph
+                    # because contiguous in bwd graph inputs.
+                    # I'll debug more and figure out the correct way.
+                    # Credits to Horace for pointing this out.
+
+                    # with tracing(saved_context), context(), track_graph_compiling(aot_config, "backward"):
+                    with context(), track_graph_compiling(aot_config, "backward"):
                         CompiledFunction.compiled_bw = aot_config.bw_compiler(
-                            bw_module, fx_placeholder_vals(bw_module)
+                            # bw_module, fx_placeholder_vals(bw_module)
+                            bw_module, all_args
                         )
 
                 ctx.maybe_clear_saved_tensors()

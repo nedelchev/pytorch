@@ -1060,6 +1060,32 @@ def maybe_init_distributed(should_init_distributed, port="6789", rank=0, world_s
         if should_init_distributed:
             torch.distributed.destroy_process_group()
 
+def skip_layout_opt(name):
+    """
+    TODO: this is a hack to remove
+    """
+    if name in [
+        # torchbench
+        "pytorch_unet",
+        "Background_Matting",
+        "drq",
+        "functorch_maml_omniglot",
+        "phlippe_densenet",
+        "pytorch_CycleGAN_and_pix2pix",
+        "resnext50_32x4d",
+        "shufflenet_v2_x1_0",
+        "yolov3",
+        "timm_efficientdet",
+
+        # timm
+        "cspdarknet53",
+        "dla102",
+        "jx_nest_base",
+        "res2net101_26w_4s",
+        "res2net50_14w_8s", # slow iteration
+        "sebotnet33ts_256", # slow iteration
+    ]:
+        torch._inductor.config.layout_opt = False
 
 class BenchmarkRunner:
     def __init__(self):
@@ -1528,6 +1554,7 @@ class BenchmarkRunner:
         explain=False,
         tag=None,
     ):
+        skip_layout_opt(name)
         mode = "train" if self.args.training else "eval"
         msg = f"{current_device:4} {mode:5} {current_name:34} "
         if tag:
