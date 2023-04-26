@@ -297,18 +297,21 @@ uint64_t getStorageKey(const at::Tensor& tensor);
 bool checkHasValidSetGetState(const std::shared_ptr<c10::ClassType>& cls);
 
 // Register function pointer of Tensor BackendMetadata for serialization.
-TORCH_API void TensorBackendMetaRegistry(c10::DeviceType t, void* get_fptr, void* set_fptr);
+TORCH_API void TensorBackendMetaRegistry(
+    c10::DeviceType t,
+    void* get_fptr,
+    void* set_fptr);
 
 // Return a map of Tensor Metadata which including BackendMetaData for
 // serialization. For now, it only takes care of `conj` and `neg` bit.
-TORCH_API std::unordered_map<std::string, int> getTensorMetadata(
+TORCH_API std::unordered_map<std::string, bool> getTensorMetadata(
     const at::Tensor& t);
 
 // set Tensor Metadata based on the map.
 // Refer: getTensorMetadata
 TORCH_API void setTensorMetadata(
     const at::Tensor& t,
-    std::unordered_map<std::string, int> metadata);
+    std::unordered_map<std::string, bool> metadata);
 
 // set Tensor metadata based on the map.
 // NOTE: This overload is required by unpickler.cpp
