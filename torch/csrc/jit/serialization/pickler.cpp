@@ -806,19 +806,22 @@ using BackendMetaPtr =
     void (*)(const at::Tensor&, std::unordered_map<std::string, bool>&);
 
 // map to save function pointer for BackendMeta serialization.
-// key is the DeviceType, value is std::pair obj. 
+// key is the DeviceType, value is std::pair obj.
 // value.first represent get function and value.seconde represent set function
 static std::unordered_map<int, std::pair<void*, void*>> serialization_map;
 
 // Register function pointer of Tensor BackendMetadata for serialization.
-void TensorBackendMetaRegistry(c10::DeviceType t, void* get_fptr, void* set_fptr) {
-    TORCH_CHECK(
-        serialization_map.find(static_cast<int>(t)) == serialization_map.end(),
-        "The tensor BackendMeta serialization function pointer for ",
-        t, "has been registered.");
-    serialization_map[static_cast<int>(t)] = std::make_pair(get_fptr, set_fptr);
+void TensorBackendMetaRegistry(
+    c10::DeviceType t,
+    void* get_fptr,
+    void* set_fptr) {
+  TORCH_CHECK(
+      serialization_map.find(static_cast<int>(t)) == serialization_map.end(),
+      "The tensor BackendMeta serialization function pointer for ",
+      t,
+      "has been registered.");
+  serialization_map[static_cast<int>(t)] = std::make_pair(get_fptr, set_fptr);
 }
-
 
 // Return a map of Tensor Metadata which including BackendMetaData for
 // serialization. For now, it only takes care of `conj` and `neg` bit.
