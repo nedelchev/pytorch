@@ -6,3 +6,4 @@ torch.__config__
 
 .. autofunction:: show
 .. autofunction:: parallel_info
+.. autofunction:: get_cpu_capability

@@ -7334,6 +7334,9 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
     def test_parallel_info(self):
         torch.__config__.parallel_info()
 
+    def test_get_cpu_capability(self):
+        torch.__config__.get_cpu_capability()
+
     @slowTest
     def test_slow_test(self):
         # Just a smoketest to make sure our slowTest decorator works.

@@ -20,3 +20,17 @@ def _cxx_flags():
 def parallel_info():
     r"""Returns detailed string with parallelization settings"""
     return torch._C._parallel_info()
+
+
+def get_cpu_capability():
+    r"""Returns cpu capability as a string value.
+
+    Possible values:
+    - "DEFAULT"
+    - "VSX"
+    - "Z VECTOR"
+    - "NO AVX"
+    - "AVX2"
+    - "AVX512"
+    """
+    return torch._C._get_cpu_capability()
