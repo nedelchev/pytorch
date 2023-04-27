@@ -186,7 +186,7 @@ class StackSize:
 
 def stacksize_analysis(instructions):
     assert instructions
-
+    print("Enter stacksize_analysis -------------------------- ")
     stack_sizes = {
         inst: StackSize(float("inf"), float("-inf")) for inst in instructions
     }
@@ -230,6 +230,6 @@ def stacksize_analysis(instructions):
 
     low = min([x.low for x in stack_sizes.values()])
     high = max([x.high for x in stack_sizes.values()])
-
+    print("Leave stacksize_analysis -------------------------- ")
     assert low >= 0
     return high
