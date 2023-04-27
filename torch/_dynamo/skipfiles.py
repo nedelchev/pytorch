@@ -33,6 +33,7 @@ import torch
 import torch._export.constraints as _export_constraints
 import torch._inductor.test_operators
 import torch.ao.quantization._pt2e.qat_utils
+import torch.ao.quantization._pt2e.quantizer.qnnpack_quantizer
 
 from . import comptime, config, external_utils
 
@@ -132,6 +133,7 @@ FILENAME_ALLOWLIST |= {torch.ao.quantization._pt2e.qat_utils.__file__}
 SKIP_DIRS_RE = None
 
 is_fbcode = importlib.import_module("torch._inductor.config").is_fbcode()
+FILENAME_ALLOWLIST |= {torch.ao.quantization._pt2e.quantizer.qnnpack_quantizer.__file__}
 # Skip fbcode paths(including torch.package paths) containing
 # one of the following strings.
 FBCODE_SKIP_DIRS = {
