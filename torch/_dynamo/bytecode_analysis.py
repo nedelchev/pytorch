@@ -200,7 +200,7 @@ def stacksize_analysis(instructions):
 
     while len(worklist) != 0:
         i += 1
-        if i > 500:
+        if i > 20:
             print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
             import traceback
             traceback.print_stack()
