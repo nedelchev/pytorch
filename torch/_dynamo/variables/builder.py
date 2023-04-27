@@ -786,7 +786,7 @@ class VariableBuilder:
         tensor_proxy = self.tx.output.create_graph_input(
             re.sub(r"[^a-zA-Z0-9]+", "_", self.name), type(value)
         )
-        print("******************************************************* 1")
+        # print("******************************************************* 1")
         tensor_variable = wrap_fx_proxy(
             tx=self.tx,
             proxy=tensor_proxy,
@@ -796,7 +796,7 @@ class VariableBuilder:
             ignore_subclass=ignore_subclass,
             source=source,
         )
-        print("******************************************************* 2")
+        # print("******************************************************* 2")
         self.tx.output.input_source_to_var[source] = tensor_variable
         assert "tensor_dict" not in tensor_proxy.node.meta
         tensor_proxy.node.meta["tensor_dict"] = value.__dict__.copy()
@@ -825,7 +825,7 @@ class VariableBuilder:
                 subclass_type,
             )
 
-        print("******************************************************* 999")
+        # print("******************************************************* 999")
         return tensor_variable
 
     def wrap_unspecialized_primitive(self, value):
@@ -951,7 +951,7 @@ def wrap_fx_proxy_cls(
     target_cls, tx, proxy, example_value=None, ignore_subclass=False, **options
 ):
     from ..symbolic_convert import InstructionTranslatorBase
-    print("******************************************************* 1.1")
+    # print("******************************************************* 1.1")
     assert isinstance(tx, InstructionTranslatorBase)
     if "guards" in options and options["guards"] is not None:
         tx.output.guards.update(options["guards"])
