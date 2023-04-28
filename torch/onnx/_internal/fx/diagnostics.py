@@ -2,7 +2,9 @@ import functools
 from typing import Any
 
 import onnxscript  # type: ignore[import]
-from onnxscript.function_libs.torch_lib import graph_building  # type: ignore[import]
+from onnxscript.function_libs.torch_lib import (  # type: ignore[attr-defined]
+    graph_building,
+)
 
 import torch
 from torch.onnx._internal import diagnostics
@@ -86,11 +88,10 @@ def _onnxscript_onnx_function(obj: onnxscript.values.OnnxFunction) -> str:
 
 diagnose_call = functools.partial(
     decorator.diagnose_call,
-    diagnostics.export_context,
     diagnostic_type=diagnostics.ExportDiagnostic,
     format_argument=format_argument,
 )
 
 rules = diagnostics.rules
-export_context = diagnostics.export_context
 levels = diagnostics.levels
+DiagnosticContext = infra.DiagnosticContext
