@@ -918,10 +918,13 @@ class TorchHigherOrderOperator(VariableTracker):
                     args = []
                     # One argument to graph per sub_args
                     for a in sub_args:
-                        if isinstance(a, TensorVariable):
+                        if isinstance(a, ConstantVariable):
+                            proxy = tracer.create_graph_input("const")
+                            args.append(a)
+                        elif isinstance(a, TensorVariable):
                             tracer.create_graph_input(a.as_proxy().node.name)
                             args.append(a)
-                        else:
+                        elif isinstance(a, torch.Tensor):
                             # call_function() needs a TensorVariable, therefore we construct
                             # one with inner graph proxy.
                             assert isinstance(a, torch.Tensor)
@@ -929,8 +932,11 @@ class TorchHigherOrderOperator(VariableTracker):
                             args.append(
                                 wrap_fx_proxy(tx=tx, proxy=proxy, example_value=a)
                             )
+                        else:
+                            raise unimplemented("Speculate subgraph with unsupported inputs.")
 
                     output = f.call_function(tx, args, {})
+                    # breakpoint()
                     # Register output to graph
                     # Modeled off of compile_and_call_fx_graph
                     # TODO: support non single Tensor output
@@ -1173,6 +1179,31 @@ class TorchHigherOrderOperator(VariableTracker):
             p_args = (
                 body_node,
                 *(arg.as_proxy() for arg in args[1:]),
+                *(arg for arg in body_lifted_freevars),
+            )
+            r = body_r.as_proxy().node.meta["example_value"]
+            example_value = r
+        elif self.value.__name__ == "trampoline_autograd_fn":
+            fn = TorchVariable(
+                self.value
+            )
+
+            checkpoint = tx.copy_graphstate()
+            graph_checkpoint = tx.output.graph
+            (
+                body_r,
+                body_graph,
+                body_lifted_freevars,
+            ) = speculate_subgraph(
+                fn,
+                [
+                    *args,
+                ],
+                graph_checkpoint,
+                checkpoint,
+            )
+            p_args = (
+                *(arg.as_proxy() for arg in args),
                 *(arg for arg in body_lifted_freevars),
             )
             r = body_r.as_proxy().node.meta["example_value"]

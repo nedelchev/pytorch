@@ -224,8 +224,16 @@ class AutogradFunctionVariable(VariableTracker):
         VariableTracker.apply(visit, (args, kwargs))
 
         if requires_grad and torch.is_grad_enabled():
-            # TODO(jansel): handle this in training mode
-            unimplemented("autograd.Function with requires_grad")
+            from .torch import TorchHigherOrderOperator
+
+            def trampoline_autograd_fn(*args, **kwargs):
+                return self.fn_cls.apply(*args, **kwargs)
+
+            # Speculate fwd
+            # TODO(voz): Check bwd soundness, or something, I dunno, bug Horace
+            # TODO(voz): NOTE: This is unguarded, but the odds of someone swapping self.fn_cls from autograd fn to something else
+            # is very low. We can add guarding before we ship this PR.
+            return TorchHigherOrderOperator(trampoline_autograd_fn).call_function(tx, args, kwargs)
 
         args = [AutogradFunctionContextVariable.create_for_inference(tx), *args]
         options = VariableTracker.propagate(self, args, kwargs.values())
